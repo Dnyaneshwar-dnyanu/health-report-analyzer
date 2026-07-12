@@ -1,0 +1,6 @@
+ingestion
+pymupdf
+easyocr 
+pillow
+groq
+python-dotenv
