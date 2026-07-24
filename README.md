@@ -215,7 +215,7 @@ health-report-analyzer/
 ### 1) Clone repository
 
 ```bash
-git clone https://github.com/<your-username>/health-report-analyzer.git
+git clone https://github.com/Dnyaneshwar-dnyanu/health-report-analyzer.git
 cd health-report-analyzer
 ```
 
