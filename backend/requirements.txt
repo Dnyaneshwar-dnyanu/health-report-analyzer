@@ -1,6 +1,11 @@
-ingestion
+fastapi
+uvicorn
+chromadb
+sentence-transformers
 pymupdf
-easyocr 
+easyocr
 pillow
 groq
 python-dotenv
+numpy
+python-multipart

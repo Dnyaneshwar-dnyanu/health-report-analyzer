@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { mockChatHistory } from '../data/mockChatHistory';
+import { useReportContext } from '../../../context/ReportContext';
 
 export const useChat = () => {
-  const [messages, setMessages] = useState(mockChatHistory);
+  const { chatHistory, setChatHistory, askAI } = useReportContext();
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
@@ -13,31 +13,44 @@ export const useChat = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping]);
+  }, [chatHistory, isTyping]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
+    const userText = input.trim();
     const newUserMsg = {
-      id: Date.now(),
+      id: `user-${Date.now()}`,
       role: 'user',
-      content: input.trim()
+      content: userText
     };
 
-    setMessages(prev => [...prev, newUserMsg]);
+    // Save user message to global context
+    setChatHistory(prev => [...prev, newUserMsg]);
     setInput('');
     setIsTyping(true);
 
-    // Mock AI Response
-    setTimeout(() => {
+    try {
+      // Direct call to FastAPI Groq RAG chat route
+      const answer = await askAI(userText);
+      
       const newAiMsg = {
-        id: Date.now() + 1,
+        id: `ai-${Date.now()}`,
         role: 'system',
-        content: 'This is a mocked AI response. In production, this text will stream directly from the FastAPI LLM endpoint.'
+        content: answer
       };
-      setMessages(prev => [...prev, newAiMsg]);
+      setChatHistory(prev => [...prev, newAiMsg]);
+    } catch (error) {
+      console.error("Chat Query Error:", error);
+      const errorMsg = {
+        id: `err-${Date.now()}`,
+        role: 'system',
+        content: `Sorry, I encountered an error processing your question: ${error.message}`
+      };
+      setChatHistory(prev => [...prev, errorMsg]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -48,7 +61,7 @@ export const useChat = () => {
   };
 
   return {
-    messages,
+    messages: chatHistory,
     input,
     setInput,
     isTyping,

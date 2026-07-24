@@ -1,23 +1,52 @@
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../../../components/common/Modal/Modal';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { mockParameterDetails, fallbackParameterDetails } from '../data/mockParameterDetails';
+import { reportApi } from '../../../services/reportApi';
 import { FiTrendingUp, FiInfo, FiHeart, FiAlertTriangle } from 'react-icons/fi';
 import { cn } from '../../../utils/cn';
 
 export const ParameterDetailsModal = ({ isOpen, onClose, parameter }) => {
+  const [realHistory, setRealHistory] = useState([]);
+
+  useEffect(() => {
+    if (isOpen && parameter?.name) {
+      reportApi.getHistory(parameter.name)
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            setRealHistory(data);
+          } else {
+            setRealHistory([]);
+          }
+        })
+        .catch(err => {
+          console.warn("Failed to fetch parameter history:", err);
+          setRealHistory([]);
+        });
+    }
+  }, [isOpen, parameter?.name]);
+
   if (!parameter) return null;
 
   const details = mockParameterDetails[parameter.name] || fallbackParameterDetails;
   
-  // Use current value as the last data point if fallback is used to make the graph look realistic
-  const chartData = details.historicalData.map(d => ({...d}));
-  if (!mockParameterDetails[parameter.name]) {
-    chartData[chartData.length - 1].value = parameter.value;
+  let chartData = [];
+  if (realHistory.length > 0) {
+    chartData = realHistory.map(h => ({
+      date: h.date,
+      value: typeof h.value === 'number' ? h.value : parseFloat(h.value) || 0
+    }));
+  } else {
+    chartData = details.historicalData.map(d => ({...d}));
+    if (!mockParameterDetails[parameter.name]) {
+      chartData[chartData.length - 1].value = parameter.value;
+    }
   }
 
   const isHigh = parameter.status === 'high';
   const isLow = parameter.status === 'low';
   const statusColor = isHigh ? 'var(--color-danger)' : isLow ? 'var(--color-warning)' : 'var(--color-success)';
+
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`${parameter.name} Details`}>
